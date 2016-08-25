@@ -20,9 +20,9 @@ void updateCar(int *pos1, int *vel1, int *pos2);
 void delay(int milliseconds);
 
 //DEFINE PARAMETERS
-int numCars = 721;
-int maxVel = 9;
-int trackLength = 8192;
+int numCars = 1638;
+int maxVel = 5;
+int trackLength = 32768;
 int sampleRate = 1;
 int dataStartStep = 5000000;
 int numSteps,numSamples;
@@ -155,6 +155,9 @@ for (fftRun=0;fftRun<fftRuns;fftRun++){
 
   
   fft(track2D,outHalf,outFull,plan_fwd,nx,ny);
+
+  if((fftRun+1)%10 == 0)
+        printf("Completed %d of %d ffts\n",fftRun+1,fftRuns);
 }
 int index;
 double avg;
