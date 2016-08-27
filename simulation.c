@@ -1,4 +1,5 @@
-//test
+//gcc simulation.c -lfftw3 -lm -o sim.exe
+//
 //#include <complex.h>
 #include <fftw3.h>
 #include <stdio.h>
