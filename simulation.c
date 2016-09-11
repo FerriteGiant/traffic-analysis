@@ -22,11 +22,11 @@ void updateCar(int *pos1, int *vel1, int *pos2);
 void delay(int milliseconds);
 
 //DEFINE PARAMETERS
-int numCars = 1638;
-int maxVel = 5;
-int trackLength = 32768;
+int numCars = 410;
+int maxVel = 9;
+int trackLength = 8192;
 int sampleRate = 1;
-int dataStartStep = 5000000;
+int dataStartStep = 100000;
 int numSteps,numSamples;
 int fftSamples = 1024;
 FILE *outputFile;
@@ -168,11 +168,12 @@ double avg;
                     "dataStartStep,%d,fftSamples,%d,fftRuns,%d\n",\
                     numCars,maxVel,trackLength,sampleRate,\
                     dataStartStep,fftSamples,fftRuns);
+  int maxny = ny/2+1; //Only store the nonredundant part of the data
   for (i=0;i<nx;i++){
-    for (j=0;j<ny;j++){
-      index = i*ny+j;
+    for (j=0;j<maxny;j++){
+      index = i*maxny+j;
       avg = outFull[index]/((double)fftRuns*(double)fftSamples*(double)trackLength);
-      if(j<ny-1)
+      if(j<maxny-1)
         fprintf(outputFile,"%.6f,",avg);
       else
         fprintf(outputFile,"%.6f",avg);
