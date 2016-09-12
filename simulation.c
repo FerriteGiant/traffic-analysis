@@ -22,13 +22,16 @@ void updateCar(int *pos1, int *vel1, int *pos2);
 void delay(int milliseconds);
 
 //DEFINE PARAMETERS
-int numCars = 410;
-int maxVel = 9;
+int numCars;
+float density;
+int maxVel;
 int trackLength = 8192;
 int sampleRate = 1;
 int dataStartStep = 100000;
 int numSteps,numSamples;
-int fftSamples = 1024;
+int fftSamples = 1024; //Time steps per FFT
+int fftRuns; //Number of matrices to do ffts of
+char *fileName;
 FILE *outputFile;
 
 
@@ -36,16 +39,32 @@ int main(int argc, char *argv[])
 {
 
 
-if (argc != 3)
+if (argc != 5)
 {
-  printf("Usage: %s <dataSamplesNumber> <outputfile.csv>\n",argv[0]);
+  printf("Usage: %s <fftRuns> <density> <maxVel> <save directory>\n",argv[0]);
   return(-1);
 }
 else
-{
-  numSamples = atoi(argv[1]);
+{ //First argument
+  fftRuns = atoi(argv[1]);
+  numSamples = fftRuns*fftSamples;
   numSteps = (numSamples*sampleRate)+dataStartStep;
-  outputFile = fopen(argv[2],"w");
+  
+  //Second argumnet
+  density = atof(argv[2]);
+  numCars = trackLength*density;
+
+  //Third argument
+  maxVel = atoi(argv[3]);
+
+  //Create filename to save to
+  float dataPoints = numSamples*numCars;
+  asprintf(&fileName, "%svel%d_density%.2f_fft%d_track%d_runs%.0e"
+                          "_numCars%d_dataPoints%.1e_halfdata_test.dat",\
+                          argv[4],maxVel,density,fftSamples,trackLength,\
+                          (float)fftRuns,numCars,dataPoints);
+  
+  outputFile = fopen(fileName,"w");
 
   if (outputFile == 0)
   {
@@ -89,7 +108,6 @@ for (i=0;i<numCars;i++){
 
 // setup stuff
 int counter = 0;
-int fftRuns = numSamples/fftSamples;
 int *distNextArray,*distAnyArray;
 distNextArray = malloc((trackLength)*sizeof(int));
 distAnyArray = malloc((trackLength)*sizeof(int));
@@ -171,7 +189,7 @@ double avg;
   int maxny = ny/2+1; //Only store the nonredundant part of the data
   for (i=0;i<nx;i++){
     for (j=0;j<maxny;j++){
-      index = i*maxny+j;
+      index = i*ny+j;
       avg = outFull[index]/((double)fftRuns*(double)fftSamples*(double)trackLength);
       if(j<maxny-1)
         fprintf(outputFile,"%.6f,",avg);
@@ -201,6 +219,7 @@ free(distAnyArray);
 fftw_free(track2D);
 free(posArray);
 free(velArray);
+free(fileName);
 }/////// END MAIN
 
 
