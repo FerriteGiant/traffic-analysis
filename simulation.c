@@ -60,7 +60,7 @@ else
   //Create filename to save to
   float dataPoints = numSamples*numCars;
   asprintf(&fileName, "%svel%d_density%.2f_fft%d_track%d_runs%.0e"
-                          "_numCars%d_dataPoints%.1e_halfdata_test.dat",\
+                          "_numCars%d_dataPoints%.1e_halfdata.csv",\
                           argv[4],maxVel,density,fftSamples,trackLength,\
                           (float)fftRuns,numCars,dataPoints);
   
