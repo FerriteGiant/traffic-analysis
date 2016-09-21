@@ -19,6 +19,7 @@ void fft(double *track2D,fftw_complex *outHalf,double *outFull,fftw_plan plan_fw
 
 void runSimulation(int *posArray, int *velArray);
 void updateCar(int *pos1, int *vel1, int *pos2);
+float welch(int timeStep);
 void delay(int milliseconds);
 
 //DEFINE PARAMETERS
@@ -46,6 +47,7 @@ if (argc != 5)
 }
 else
 { //First argument
+//printf("test");
   fftRuns = atoi(argv[1]);
   numSamples = fftRuns*fftSamples;
   numSteps = (numSamples*sampleRate)+dataStartStep;
@@ -58,11 +60,12 @@ else
   maxVel = atoi(argv[3]);
 
   //Create filename to save to
-  float dataPoints = numSamples*numCars;
+  //float dataPoints = numSamples*numCars;
+  //printf("dataPoints: %f",dataPoints);
   asprintf(&fileName, "%svel%d_density%.2f_fft%d_track%d_runs%.0e"
-                          "_numCars%d_dataPoints%.1e_halfdata.csv",\
+                          "_numCars%d_halfdata.csv",\
                           argv[4],maxVel,density,fftSamples,trackLength,\
-                          (float)fftRuns,numCars,dataPoints);
+                          (float)fftRuns,numCars);
   
   outputFile = fopen(fileName,"w");
 
@@ -176,7 +179,7 @@ for (fftRun=0;fftRun<fftRuns;fftRun++){
   
   fft(track2D,outHalf,outFull,plan_fwd,nx,ny);
 
-  if((fftRun+1)%10 == 0)
+  if((fftRun+1)%100 == 0)
         printf("Completed %d of %d ffts\n",fftRun+1,fftRuns);
 }
 int index;
@@ -246,11 +249,11 @@ free(fileName);
 void trackHistory(int *posArray,double *track2D, int counter)
 {
   int i,t;
-  double sVal,wavelength,period;
-  wavelength = (double)trackLength/1.0;
-  period = (double)fftSamples/1.0;
+  //double sVal,wavelength,period;
+  //wavelength = (double)trackLength/1.0;
+  //period = (double)fftSamples/1.0;
   for(i=0;i<numCars;i++){
-    track2D[posArray[i]+counter*trackLength]=1;
+    track2D[posArray[i]+counter*trackLength]=welch(counter);
   }
 //    for(i=0;i<trackLength;i++){
 //      sVal =  cos(2*PI*(2*i/wavelength + 2*counter/period));
@@ -485,6 +488,14 @@ if (*vel1 > 0){
 //update position based on new velocity
 *pos1 = (*pos1 + *vel1) % trackLength;
 
+}
+
+float welch(int timeStep)
+{
+    float n = timeStep;
+      float N = fftSamples;
+
+        return 1.0 - pow(((n+1)-.5*(N+1))/(.5*(N+1)),2.0);
 }
 
 void delay(int milliseconds)
