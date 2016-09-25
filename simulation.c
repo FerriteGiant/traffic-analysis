@@ -50,6 +50,7 @@ if (argc != 5)
 }
 else
 { //First argument
+//printf("test");
   fftRuns = atoi(argv[1]);
   numSamples = fftRuns*fftSamples;
   numSteps = (numSamples*sampleRate)+dataStartStep;
@@ -62,11 +63,12 @@ else
   maxVel = atoi(argv[3]);
 
   //Create filename to save to
-  float dataPoints = numSamples*numCars;
+  //float dataPoints = numSamples*numCars;
+  //printf("dataPoints: %f",dataPoints);
   asprintf(&fileName, "%svel%d_density%.2f_fft%d_track%d_runs%.0e"
-                          "_numCars%d_dataPoints%.1e_halfdata.csv",\
+                          "_numCars%d_halfdata.csv",\
                           argv[4],maxVel,density,fftSamples,trackLength,\
-                          (float)fftRuns,numCars,dataPoints);
+                          (float)fftRuns,numCars);
   
   outputFile = fopen(fileName,"w");
 
@@ -180,7 +182,7 @@ for (fftRun=0;fftRun<fftRuns;fftRun++){
   
   fft(track2D,outHalf,outFull,plan_fwd,nx,ny);
 
-  if((fftRun+1)%10 == 0)
+  if((fftRun+1)%100 == 0)
         printf("Completed %d of %d ffts\n",fftRun+1,fftRuns);
 }
 int index;
@@ -250,12 +252,20 @@ free(fileName);
 void trackHistory(int *posArray,double *track2D, int counter)
 {
   int i,t;
+<<<<<<< HEAD
 //  double sVal,wavelength,period;
 //  wavelength = (double)trackLength/1.0;
 //  period = (double)fftSamples/1.0;
   for(i=0;i<numCars;i++){
     track2D[posArray[i]+counter*trackLength]=welch(counter);
     //printf("%.2f ",welch(counter));
+=======
+  //double sVal,wavelength,period;
+  //wavelength = (double)trackLength/1.0;
+  //period = (double)fftSamples/1.0;
+  for(i=0;i<numCars;i++){
+    track2D[posArray[i]+counter*trackLength]=welch(counter);
+>>>>>>> 7a800335467e3029e614fb7394501a0662e76721
   }
   //printf("\n");
 //    for(i=0;i<trackLength;i++){
@@ -495,10 +505,17 @@ if (*vel1 > 0){
 
 float welch(int timeStep)
 {
+<<<<<<< HEAD
   float n = timeStep;
   float N = fftSamples;
 
   return 1.0 - pow(((n+1)-.5*(N+1))/(.5*(N+1)),2.0);
+=======
+    float n = timeStep;
+      float N = fftSamples;
+
+        return 1.0 - pow(((n+1)-.5*(N+1))/(.5*(N+1)),2.0);
+>>>>>>> 7a800335467e3029e614fb7394501a0662e76721
 }
 
 void delay(int milliseconds)
