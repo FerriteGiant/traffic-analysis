@@ -1,4 +1,7 @@
+//
+//
 //gcc simulation.c -lfftw3 -lm -o sim.exe
+//
 //
 //#include <complex.h>
 #include <fftw3.h>
@@ -19,6 +22,7 @@ void fft(double *track2D,fftw_complex *outHalf,double *outFull,fftw_plan plan_fw
 
 void runSimulation(int *posArray, int *velArray);
 void updateCar(int *pos1, int *vel1, int *pos2);
+float welch(int timeStep);
 void delay(int milliseconds);
 
 //DEFINE PARAMETERS
@@ -164,7 +168,7 @@ for (fftRun=0;fftRun<fftRuns;fftRun++){
     //asciiDisplay(posArray, velArray);
     //trackDiffusion(posArray, velArray);
     //pairCorrelation(posArray, velArray,distAnyArray);
-    trackHistory(posArray,track2D,counter);
+    trackHistory(posArray,track2D,counter); //Store output of a given step
   
     counter++;
   }
@@ -246,12 +250,14 @@ free(fileName);
 void trackHistory(int *posArray,double *track2D, int counter)
 {
   int i,t;
-  double sVal,wavelength,period;
-  wavelength = (double)trackLength/1.0;
-  period = (double)fftSamples/1.0;
+//  double sVal,wavelength,period;
+//  wavelength = (double)trackLength/1.0;
+//  period = (double)fftSamples/1.0;
   for(i=0;i<numCars;i++){
-    track2D[posArray[i]+counter*trackLength]=1;
+    track2D[posArray[i]+counter*trackLength]=welch(counter);
+    //printf("%.2f ",welch(counter));
   }
+  //printf("\n");
 //    for(i=0;i<trackLength;i++){
 //      sVal =  cos(2*PI*(2*i/wavelength + 2*counter/period));
 //      sVal += cos(2*PI*(2*i/wavelength + 1*counter/period));
@@ -485,6 +491,14 @@ if (*vel1 > 0){
 //update position based on new velocity
 *pos1 = (*pos1 + *vel1) % trackLength;
 
+}
+
+float welch(int timeStep)
+{
+  float n = timeStep;
+  float N = fftSamples;
+
+  return 1.0 - pow(((n+1)-.5*(N+1))/(.5*(N+1)),2.0);
 }
 
 void delay(int milliseconds)
