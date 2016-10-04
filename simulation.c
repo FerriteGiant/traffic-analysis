@@ -34,7 +34,7 @@ int trackLength = 8192;
 int sampleRate = 1;
 int dataStartStep = 100000;
 int numSteps,numSamples;
-int fftSamples = 1024; //Time steps per FFT
+int fftSamples = 2048; //Time steps per FFT
 int fftRuns; //Number of matrices to do ffts of
 char *fileName;
 FILE *outputFile;
@@ -67,7 +67,7 @@ else
   //float dataPoints = numSamples*numCars;
   //printf("dataPoints: %f",dataPoints);
   asprintf(&fileName, "%svel%d_density%.2f_fft%d_track%d_runs%.0e"
-                          "_numCars%d_halfdata_Welch.csv",\
+                          "_numCars%d_halfdata.csv",\
                           argv[4],maxVel,density,fftSamples,trackLength,\
                           (float)fftRuns,numCars);
   
@@ -257,8 +257,8 @@ void trackHistory(int *posArray,double *track2D, int counter)
 //  wavelength = (double)trackLength/1.0;
 //  period = (double)fftSamples/1.0;
   for(i=0;i<numCars;i++){
-    track2D[posArray[i]+counter*trackLength]=welch(counter);
-    //track2D[posArray[i]+counter*trackLength]=Hamm(counter);
+    //track2D[posArray[i]+counter*trackLength]=welch(counter);
+    track2D[posArray[i]+counter*trackLength]=Hamm(counter);
     //printf("%.3f ",welch(counter));
     //printf("%.3f ",Hamm(counter));
   //double sVal,wavelength,period;
