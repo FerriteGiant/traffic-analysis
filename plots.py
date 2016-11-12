@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import axes3d
 import matplotlib.cm as cm
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import math as m
 from scipy.optimize import least_squares
 
@@ -14,13 +15,13 @@ def importData(fileName):
   data = csv.reader(file,delimiter=",")
   infoArray =data.next()
   for row in data:
-    dataArray.append(row[1:]) 
+    dataArray.append(row[1:]) #[1:] skips the first entry on each row
   file.close()
   
   return infoArray,dataArray
 
 #Pass in a parameter array 
-#p[0] = height of the peak
+#p[0] = height of the peak (ish...)
 #p[1] = center of peak
 #p[2] = FWHM
 def lorentz(p,x):
@@ -29,17 +30,66 @@ def lorentz(p,x):
 def residuals(p,x,y):
   return lorentz(p,x) - y
 
+def convertW(Wn,samples):
+  return 2*np.pi*(Wn)/(samples*2.0)
+
 #################
 
 #Q = int(sys.argv[1]);
 dataFiles = [
-"/data/trafficFlowData/vel9_density0.06_fft1024_track8192_runs2e+03_numCars491_halfdata_Hamm.csv",
-"/data/trafficFlowData/vel9_density0.06_fft1024_track8192_runs2e+03_numCars491_halfdata_Welch.csv",
-#"/data/trafficFlowData/vel5_density0.10_fft1024_track8192_runs1e+05_numCars819_halfdata.csv",
-#"/data/trafficFlowData/vel5_density0.14_fft1024_track8192_runs1e+05_numCars1146_halfdata.csv",
-#"/data/trafficFlowData/vel9_density0.05_fft1024_track8192_runs1e+05_numCars409_halfdata.csv",
-#"/data/trafficFlowData/vel9_density0.07_fft1024_track8192_runs1e+05_numCars573_halfdata.csv",
-#"/data/trafficFlowData/vel9_density0.08_fft1024_track8192_runs1e+05_numCars655_halfdata.csv"
+#"/data/trafficFlowData/vel5_density0.01_fft2048_track8192_runs3.01e+05_numCars81_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.03_fft2048_track8192_runs9.96e+04_numCars245_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.04_fft2048_track8192_runs1.49e+03_numCars327_numDataPoints1.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.05_fft2048_track8192_runs5.97e+04_numCars409_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.06_fft2048_track8192_runs9.94e+02_numCars491_numDataPoints1.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.07_fft2048_track8192_runs4.26e+04_numCars573_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.08_fft2048_track8192_runs7.45e+02_numCars655_numDataPoints1.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.09_fft2048_track8192_runs3.31e+04_numCars737_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.10_fft2048_track8192_runs2.98e+03_numCars819_numDataPoints5.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.11_fft2048_track8192_runs2.71e+04_numCars901_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.12_fft2048_track8192_runs4.96e+02_numCars983_numDataPoints1.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.13_fft2048_track8192_runs2.29e+04_numCars1064_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.135_fft2048_track8192_runs4.42e+03_numCars1105_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.138_fft2048_track8192_runs4.32e+03_numCars1130_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.14_fft2048_track8192_runs8.52e+02_numCars1146_numDataPoints2.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.145_fft2048_track8192_runs4.11e+03_numCars1187_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.15_fft2048_track8192_runs7.95e+02_numCars1228_numDataPoints2.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.20_fft2048_track8192_runs5.96e+02_numCars1638_numDataPoints2.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.30_fft2048_track8192_runs9.93e+02_numCars2457_numDataPoints5.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.40_fft2048_track8192_runs7.45e+02_numCars3276_numDataPoints5.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.50_fft2048_track8192_runs5.96e+02_numCars4096_numDataPoints5.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.60_fft2048_track8192_runs4.96e+02_numCars4915_numDataPoints5.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.70_fft2048_track8192_runs4.25e+02_numCars5734_numDataPoints5.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel5_density0.80_fft2048_track8192_runs3.72e+02_numCars6553_numDataPoints5.0e+09_halfdata_Hamm.csv",
+#"/data/trafficFlowData/old/vel5_density0.05_fft2048_track8192_runs1e+04_numCars409_halfdata_Welch.csv",
+#####################
+####### Vel 9 #######
+#####################
+#"/data/trafficFlowData/vel9_density0.01_fft2048_track8192_runs3.01e+05_numCars81_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.02_fft2048_track8192_runs1.50e+05_numCars163_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.03_fft2048_track8192_runs9.96e+04_numCars245_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.04_fft2048_track8192_runs7.47e+04_numCars327_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.05_fft2048_track8192_runs5.97e+04_numCars409_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.06_fft2048_track8192_runs4.97e+04_numCars491_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.07_fft2048_track8192_runs4.26e+04_numCars573_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.075_fft2048_track8192_runs7.95e+03_numCars614_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.08_fft2048_track8192_runs3.73e+04_numCars655_numDataPoints5.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.082_fft2048_track8192_runs7.28e+03_numCars671_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.083_fft2048_track8192_runs7.19e+03_numCars679_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.0835_fft2048_track8192_runs7.14e+03_numCars684_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.084_fft2048_track8192_runs7.10e+03_numCars688_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.085_fft2048_track8192_runs7.02e+03_numCars696_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.087_fft2048_track8192_runs6.86e+03_numCars712_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.088_fft2048_track8192_runs6.78e+03_numCars720_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.089_fft2048_track8192_runs6.70e+03_numCars729_numDataPoints1.0e+10_halfdata_Hamm.csv",
+"/data/trafficFlowData/vel9_density0.09_fft2048_track8192_runs6.62e+03_numCars737_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.095_fft2048_track8192_runs6.28e+03_numCars778_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.10_fft2048_track8192_runs5.96e+03_numCars819_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.15_fft2048_track8192_runs3.98e+03_numCars1228_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.20_fft2048_track8192_runs2.98e+03_numCars1638_numDataPoints1.0e+10_halfdata_Hamm.csv",
+##"/data/trafficFlowData/vel9_density0.30_fft2048_track8192_runs1.99e+03_numCars2457_numDataPoints1.0e+10_halfdata_Hamm.csv",
+#"/data/trafficFlowData/vel9_density0.50_fft2048_track8192_runs1.19e+03_numCars4096_numDataPoints1.0e+10_halfdata_Hamm.csv",
+
 ]
 
 for file in dataFiles:
@@ -54,27 +104,40 @@ for file in dataFiles:
   fftRuns = int(info[13])
   numCars=int(info[1])
   maxVel=int(info[3])
-  infoText="Track Length: {}, ".format(trackLength)
-  infoText=infoText+"Num of samples in each FFT: {}, ".format(fftSamples)
-  infoText=infoText+"Num of FFTs: {}\n".format(fftRuns)
-  infoText=infoText+"Max Vel: {}, ".format(maxVel)
-  infoText=infoText+"Number of cars: {}, ".format(numCars)
-  infoText=infoText+"Car density: {:.03f}".format(1.0*numCars/trackLength)
+  density = float(numCars)/float(trackLength)
+  densityString = "Density: {:.4f}".format(density)
+  numDataPoints = int(info[15])
+  infoText="Max Vel: {}, ".format(maxVel)
+  infoText=infoText+"Car density: {:.03f}, ".format(density)
+  infoText=infoText+"Track Length: {}, ".format(trackLength)
+  infoText=infoText+"Num of time steps in each FFT: {}".format(fftSamples)
+  #infoText=infoText+"Num of FFTs: {}\n".format(fftRuns)
+  #infoText=infoText+"Number of cars: {}, ".format(numCars)
+  #infoText=infoText+"Num of datums: {:.03e}".format(numDataPoints)
   print infoText
+  print densityString
   
   
   #########################################################
   #Create S(q,w) intensity plot
   #########################################################
   
-  if 0:
+  if 1:
+    ax1 = plt.subplot2grid((3,3), (0,0), colspan=3)
+    ax2 = plt.subplot2grid((3,3), (1,0), colspan=3, rowspan=2)
   #  fig = plt.figure()
-    plt.matshow(z)
-    plt.grid(True)
-    plt.xlabel('q')
-    plt.ylabel("omega")
-    plt.colorbar()
-    plt.show()
+    #ax2.matshow(np.log(z),cmap='autumn')
+    lnz =  np.log(z)
+    #lnzfull = np.hstack((lnz,np.flipud(np.fliplr(lnz))))
+    ax2.pcolormesh(lnz,cmap='autumn',vmin=-7,vmax=np.max(lnz))
+    ax2.axvline(4096*2/(maxVel+.9),color='k')
+    ax2.set_xlim(0,trackLength/(maxVel-2))
+    ax2.set_ylim(0,fftSamples*2)
+    ax2.grid(True)
+    ax2.set_xlabel("Integer Wave Vector, q")
+    ax2.set_ylabel(r"Integer frequency, $\omega_n$")
+    #ax2.colorbar()
+    #plt.show()
   
    # #nx: time (w)
    # #ny: space (q)
@@ -111,10 +174,7 @@ for file in dataFiles:
    # 
    # plt.show()
   
-  #########################################################
-  # Power spectrum for w at a given q
-  #########################################################
-  
+
   if 0:
     #xmin = 0
     #xmax = len(Z)
@@ -122,9 +182,9 @@ for file in dataFiles:
     #ymax = np.max(Z)*1.1
   
     fig = plt.figure()
-    plt.plot(z[:,0])
+    plt.plot(z[:,10])
   
-    plt.title("Frequency Power Spectrum\n"+infoText)
+#    plt.title("Frequency Power Spectrum\n"+infoText)
     plt.xlabel('Freq, w')
     plt.ylabel("Power")
   
@@ -138,260 +198,28 @@ for file in dataFiles:
   #Create S(q) plot (sum over all w for each q)
   #########################################################
   
-  if 0:
+  if 1:
     Z = np.sum(z,axis=0) #sum along time freq axis
     xmin = 0
-    xmax = len(Z)
+    xmax = trackLength/(maxVel-2)
     ymin = 0
     ymax = np.max(Z)*1.1
   
-    fig = plt.figure()
-    plt.plot(Z)
+    Zfull = np.hstack((Z,np.flipud(Z)))
+    #ax1 = plt.subplot2grid((3,3), (0,0), colspan=3)
+    ax1.plot(Z)
+    ax1.axvline(4096*2/(maxVel+.9),color='k')
   
-    plt.title("Structure Factor\n"+infoText)
-    plt.xlabel('Wave vector, q')
-    plt.ylabel("Sum over Omega")
+    ax1.set_title("Structure Factor\n"+infoText)
+    ax1.set_xlabel('Integer Wave vector, q')
+    ax1.set_ylabel(r"Sum over $\omega$")
   
-    plt.axis([xmin, xmax, ymin, ymax])
-    plt.grid(True)
+    ax1.set_xlim([xmin, xmax])
+    ax1.set_ylim([ymin, 450])
+    ax1.grid(True)
     plt.tight_layout()
   
     plt.show()
-  
-  
-  #########################################################
-  #Plot q slices (all omega for a given q)
-  #########################################################
-  
-  if 1:
-    globalMax = .2#np.amax(z)
-    zqLen = len(z[:,0]) #Number of omega values per q
-    qLen = len(z[0,:])  #Track length (ish)
-    FWHM=np.empty(qLen)
-    FWHM.fill(np.NAN)
-    fitFWHM=np.empty(qLen)
-    fitFWHM.fill(np.NAN)
-  
-    #Iterate over all q
-    qVals = range(0,400,1)
-    for q in qVals:
-      #print "q = {}".format(q)
-  
-      normFactor = np.sum(z[:,q])
-      zq = z[:,q]/normFactor
-
-      maxVal = np.max(zq)
-
-      maxIndex = np.argmax(zq)
-      halfMax = maxVal/2
-  
-  
-      ################################################################
-      #Find FWHM via 'brute force' method
-      ################################################################
-  
-      #iterate forward looking for low side location of half max
-      for i in xrange(0,zqLen):
-        if zq[i] >= halfMax:
-          lowSideIndex = i-.5
-          break
-      try:
-        lowSideIndex
-      except NameError:
-        print "Low side of half width not found for q = {}".format(q)
-        quit()
-  
-      #iterate backward looking for high side location of half max
-      for i in xrange(zqLen-1,-1,-1):
-        if zq[i] >= halfMax:
-          highSideIndex = i+.5
-          break
-  
-      #Error Checking
-      try:
-        highSideIndex
-      except NameError:
-        print "High side of half width not found for q = {}".format(q)
-        quit()
-  
-      if highSideIndex <= lowSideIndex:
-        print "High side lower than low side for q={}".format(q)
-        continue
-  
-      if (lowSideIndex <= 0) or (highSideIndex >= qLen):
-        #print "low or high side index out of range for q={}".format(q)
-        continue
-  
-      #Calculate FWHM and more error checking
-      fwhm = highSideIndex - lowSideIndex
-      if fwhm > zqLen/2:
-        print "FWHM out of bounds:"
-        print q,fwhm,lowSideIndex,highSideIndex
-        fwhm = zqLen-highSideIndex+lowSideIndex
-        print fwhm
-        continue
-  
-      #Save to array of full widths
-      FWHM[q] = fwhm
-      
-      ################################################################
-      #Find FWHM via a non-linear least sqrs fit to a lorenzian
-      ################################################################
-      fitDataX1 = int(lowSideIndex+.5-4)
-      fitDataX2 = int(highSideIndex-.5+4)
-      if (fitDataX1 < 0) or (fitDataX2 >= len(zq)):
-        continue
-      xData = range(fitDataX1,fitDataX2+1)
-
-      yData = np.empty(len(xData))
-      i = 0
-      for j in xData:
-        yData[i] = zq[j]
-        i+=1;
-
-      x0 = (highSideIndex + lowSideIndex)/2; #guess for peak location
-      p0 = np.array([maxVal,x0,fwhm]) #initial parameter guesses
-  
-      res = least_squares(residuals, p0, args=(xData, yData))
-      #print "p0: "
-      #print p0
-      #print "res.x: "
-      #print res.x
-      A = res.x[0]
-      X0 = res.x[1]
-      L = res.x[2]
-      fitFWHM[q] = res.x[2]
-      xFitPoints = np.arange(fitDataX1,fitDataX2,.2)
-      yFitPoints = lorentz(res.x,xFitPoints)
-
-
-  #    ################################################################
-  #    #Find FWHM using a quadratic fit of the inverse of the peak
-  #    ################################################################
-  #    fitDataX1 = int(lowSideIndex+.5-3)
-  #    fitDataX2 = int(highSideIndex-.5+3)
-  #    numPoints = fitDataX2 - fitDataX1 + 1
-  #    
-  #    if (fitDataX1 < 0) or (fitDataX2 >= len(zq)):
-  #      continue
-  #
-  #    fitData=np.empty(zqLen)
-  #    fitData.fill(np.NAN)
-  #    for i in xrange(fitDataX1,fitDataX2+1):
-  #      fitData[i] = zq[i]
-  #    fitRange = range(fitDataX1,fitDataX2+1)
-  #    fitParam = np.polyfit(fitRange,1.0/fitData[fitDataX1:fitDataX2+1],2)
-  #    a = fitParam[0]
-  #    b = fitParam[1]
-  #    c = fitParam[2]
-  #    
-  #    fitDensity = .2
-  #    fitLineX=np.empty((numPoints+4)/fitDensity+1)
-  #    fitLineY=np.empty((numPoints+4)/fitDensity+1)
-  #    fitLineX.fill(np.NAN)
-  #    fitLineY.fill(np.NAN)
-  #
-  #    j=0
-  #    for i in np.arange(fitDataX1-2,fitDataX2+2,fitDensity):
-  #      fitLineX[j] = i
-  #      fitLineY[j] = a*i*i + b*i + c
-  #      j += 1
-  #
-  #    fitHalfMax = np.nanmax(1.0/fitLineY)/2.0
-  #
-  #    #root = b**2.0 - 4.0*a*(c-fitHalfMax)
-  #    root = -b**2.0 + 4.0*a*c
-  #    if root < 0:
-  #      print "Imaginary answer for q={}".format(q)
-  #      print "a,b,c = ",a,b,c
-  #      print "Max: ",np.nanmax(fitLineY)
-  #      print "root: ",root
-  #      continue
-  #
-  #    halfWidthX1 = fitDataX1-3#(-b*1.0 + m.sqrt(root))/(2.0*a)
-  #    halfWidthX2 = fitDataX2+3#(-b*1.0 - m.sqrt(root))/(2.0*a)
-  #    #fitfwhm = halfWidthX2 - halfWidthX1
-  #    fitPeakX = (-b)/(2.0*a)
-  #    fitfwhm = m.sqrt(root)/a
-  #    fitFWHM[q] = fitfwhm
-  #    halfWidthX1 = fitPeakX - fitfwhm/2.0
-  #    halfWidthX2 = fitPeakX + fitfwhm/2.0
-  #    print fitPeakX,fitfwhm
-  #
-  #
-  
-      ###############
-      #Plot Q slices
-      ###############
-  #    xmin=fitDataX1 - 2*fwhm
-  #    xmax=fitDataX2 + 2*fwhm
-  #    fwhmFitX1 = res.x[1]-res.x[2]/2.0
-  #    fwhmFitX2 = res.x[1]+res.x[2]/2.0
-  #    #ymin=0
-  #    #ymax=10*maxVal#np.nanmax(maxVal,np.nanmax(1.0/fitLineY))
-  #    fig = plt.figure()
-  #    plt.plot(zq);
-  #    plt.plot(xData,yData,'ro')
-  #    plt.plot(xFitPoints,yFitPoints,'g*')
-  #    plt.plot([lowSideIndex,highSideIndex],[halfMax,halfMax],'r-',linewidth=2.0)
-  #    plt.plot([fwhmFitX1,fwhmFitX2],[res.x[0]/2.0,res.x[0]/2.0],'g-',linewidth=2.0)
-  #
-  #    plt.title( 'Omega distribution for q = {}. Area={}'.format(q,np.sum(zq)) )
-  #    plt.xlabel('Omega')
-  #    plt.ylabel("Intensity")
-  #
-  #    ymin,ymax=plt.ylim()
-  #    plt.axis([xmin, xmax, ymin, ymax])
-  #    plt.grid(True)
-  #    #plt.tight_layout()
-  #
-  #    #plt.savefig("/data/tempPlots/Q{0:04d}.png".format(q))
-  #    plt.show()
-  #    plt.close()
-    
-    #####################################################################
-    # Fit line to FWHM values
-    #####################################################################
-  
-    xValsToFit = np.array(qVals[0:300])
-    yValsToFit = np.empty(len(xValsToFit))
-    j=0
-    for i in xValsToFit:
-      yValsToFit[j] = fitFWHM[i]
-      j+=1
-  
-    indx = np.isfinite(xValsToFit) & np.isfinite(yValsToFit)
-    linFitParam = np.polyfit(xValsToFit[indx],yValsToFit[indx],1)
-    M = linFitParam[0]
-    b = linFitParam[1]
-    print M,b
-  
-    linFitYvals=np.empty(len(xValsToFit))
-    linFitYvals.fill(np.NAN)
-    
-    j=0
-    for i in xValsToFit:
-      linFitYvals[j] = M*i + b
-      j+=1
-  
-  #############
-  # Plot Things
-  #############
-    fig = plt.figure()
-    plt.plot(FWHM,'r.')
-    plt.plot(fitFWHM,'g.-')
-    plt.plot(xValsToFit,linFitYvals,'k-')
-#  
-    plt.title('FWHM for the peak in each q slice\n'+infoText)
-    plt.xlabel('Wave vector, q')
-    plt.ylabel("FWHM")
-#  
-    plt.grid(True)
-    ymax = np.nanmax(fitFWHM)
-    plt.axis([np.amin(qVals),np.amax(qVals),0,5.1])
-    plt.tight_layout()
-    plt.show()
-#    plt.close()
   
   
   #########################################################
@@ -458,7 +286,7 @@ for file in dataFiles:
     #savefig('foo.png', bbox_inches='tight')
     #plt.close()
 
-
+plt.show()
 
 #######################################################
 #######################################################
