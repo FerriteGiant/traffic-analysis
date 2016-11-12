@@ -30,9 +30,10 @@ void delay(int milliseconds);
 int numCars;
 float density;
 int maxVel;
+float numDataPoints;
 int trackLength = 8192;
 int sampleRate = 1;
-int dataStartStep = 100000;
+int dataStartStep = 5000000;
 int numSteps,numSamples;
 int fftSamples = 2048; //Time steps per FFT
 int fftRuns; //Number of matrices to do ffts of
@@ -44,32 +45,44 @@ int main(int argc, char *argv[])
 {
 
 
-if (argc != 5)
+if (argc != 7)
 {
-  printf("Usage: %s <fftRuns> <density> <maxVel> <save directory>\n",argv[0]);
+  printf("Usage: %s <numDataPoints> <trackLength> <fftSamples> <density> <maxVel> <save directory>\n",argv[0]);
   return(-1);
 }
 else
 { //First argument
-//printf("test");
-  fftRuns = atoi(argv[1]);
-  numSamples = fftRuns*fftSamples;
-  numSteps = (numSamples*sampleRate)+dataStartStep;
+  numDataPoints = atof(argv[1]);
   
   //Second argumnet
-  density = atof(argv[2]);
-  numCars = trackLength*density;
+  trackLength = atoi(argv[2]);
 
   //Third argument
-  maxVel = atoi(argv[3]);
+  fftSamples = atoi(argv[3]);
+  
+  //Fourth argument
+  density = atof(argv[4]);
+  numCars = trackLength*density;
+
+  //Fifth argument
+  maxVel = atoi(argv[5]);
+  
+  fftRuns = numDataPoints/(numCars*fftSamples);
+  numSamples = fftRuns*fftSamples;
+  numSteps = (numSamples*sampleRate)+dataStartStep;
+
+  if (fftRuns < 1)
+  {
+    printf("Can't perform fewer than 1 fftRuns");
+    return(-1);
+  }
 
   //Create filename to save to
-  //float dataPoints = numSamples*numCars;
-  //printf("dataPoints: %f",dataPoints);
-  asprintf(&fileName, "%svel%d_density%.2f_fft%d_track%d_runs%.0e"
-                          "_numCars%d_halfdata.csv",\
-                          argv[4],maxVel,density,fftSamples,trackLength,\
-                          (float)fftRuns,numCars);
+  asprintf(&fileName, "%svel%d_density%.3f_fft%d_track%d_runs%.2e"
+                          "_numCars%d_numDataPoints%.1e_halfdata_Hamm.csv",\
+                          argv[6],maxVel,density,fftSamples,trackLength,\
+                          (float)fftRuns,numCars,numDataPoints);
+  printf("%s\n",fileName);
   
   outputFile = fopen(fileName,"w");
 
@@ -183,25 +196,25 @@ for (fftRun=0;fftRun<fftRuns;fftRun++){
   
   fft(track2D,outHalf,outFull,plan_fwd,nx,ny);
 
-  if((fftRun+1)%100 == 0)
+  if((fftRun+1)%500 == 0)
         printf("Completed %d of %d ffts\n",fftRun+1,fftRuns);
 }
 int index;
 double avg;
   //Print result of DFT
   fprintf(outputFile,"numCars,%d,maxVel,%d,trackLength,%d,sampleRate,%d,"
-                    "dataStartStep,%d,fftSamples,%d,fftRuns,%d\n",\
+                    "dataStartStep,%d,fftSamples,%d,fftRuns,%d,numDataPoints,%.0f\n",\
                     numCars,maxVel,trackLength,sampleRate,\
-                    dataStartStep,fftSamples,fftRuns);
+                    dataStartStep,fftSamples,fftRuns,numDataPoints);
   int maxny = ny/2+1; //Only store the nonredundant part of the data
   for (i=0;i<nx;i++){
     for (j=0;j<maxny;j++){
       index = i*ny+j;
       avg = outFull[index]/((double)fftRuns*(double)fftSamples*(double)trackLength);
       if(j<maxny-1)
-        fprintf(outputFile,"%.6f,",avg);
+        fprintf(outputFile,"%.7f,",avg);
       else
-        fprintf(outputFile,"%.6f",avg);
+        fprintf(outputFile,"%.7f",avg);
     }
     fprintf(outputFile,"\n");
   }
