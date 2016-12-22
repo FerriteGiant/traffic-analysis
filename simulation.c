@@ -16,8 +16,10 @@ void distProbDistributionHist(int *posArray, int *velArray, int *distArray);
 void asciiDisplay(int *posArray, int *velArray);
 void trackDiffusion(int *posArray, int *velArray);
 void pairCorrelation(int *posArray, int *velArray, int *distArray);
+int phiBool(int i, int *posArray);
+//void phi(int t, int *posArray, int *velArray, int *phiArray, int* phi0Array);
 //void fftSetup(double **track2D,fftw_complex **outHalf,fftw_complex **outFull, fftw_plan plan_fwd, int nx, int ny);
-void trackHistory(int *posArray,double *track2D,int counter);
+void trackHistory(int *posArray,double *track2D,int fftCounter);
 void fft(double *track2D,fftw_complex *outHalf,double *outFull,fftw_plan plan_fwd, int nx, int ny);
 
 void runSimulation(int *posArray, int *velArray);
@@ -31,11 +33,12 @@ int numCars;
 float density;
 int maxVel;
 float numDataPoints;
-int trackLength = 8192;
+int trackLength;
 int sampleRate = 1;
+int p; //percent chance of slowdown
 int dataStartStep = 5000000;
 int numSteps,numSamples;
-int fftSamples = 2048; //Time steps per FFT
+int fftSamples; //Time steps per FFT
 int fftRuns; //Number of matrices to do ffts of
 char *fileName;
 FILE *outputFile;
@@ -45,9 +48,9 @@ int main(int argc, char *argv[])
 {
 
 
-if (argc != 7)
+if (argc != 9)
 {
-  printf("Usage: %s <numDataPoints> <trackLength> <fftSamples> <density> <maxVel> <save directory>\n",argv[0]);
+  printf("Usage: %s <numDataPoints> <trackLength> <fftSamples> <density> <maxVel> <slowPercent> <save directory> <\"notes\">\n",argv[0]);
   return(-1);
 }
 else
@@ -66,6 +69,9 @@ else
 
   //Fifth argument
   maxVel = atoi(argv[5]);
+
+  //Sixth argument
+  p = atoi(argv[6]);
   
   fftRuns = numDataPoints/(numCars*fftSamples);
   numSamples = fftRuns*fftSamples;
@@ -78,10 +84,10 @@ else
   }
 
   //Create filename to save to
-  asprintf(&fileName, "%svel%d_density%.3f_fft%d_track%d_runs%.2e"
-                          "_numCars%d_numDataPoints%.1e_halfdata_Hamm.csv",\
-                          argv[6],maxVel,density,fftSamples,trackLength,\
-                          (float)fftRuns,numCars,numDataPoints);
+  asprintf(&fileName, "%svel%d_density%.3f_fft%d_track%d_slowP%d_runs%.2e"
+                          "_numCars%d_numDataPoints%.1e_halfdata_Hamm_%s.csv",\
+                          argv[7],maxVel,density,fftSamples,trackLength,p,\
+                          (float)fftRuns,numCars,numDataPoints,argv[8]);
   printf("%s\n",fileName);
   
   outputFile = fopen(fileName,"w");
@@ -115,8 +121,8 @@ if(!(fftSamples%sampleRate==0))
 //ALLOCATE DATA ARRAYS
 int i,j,k,fftRun,step;
 int *posArray, *velArray;
-posArray = malloc((numCars+1)*sizeof(int));
-velArray = malloc((numCars+1)*sizeof(int));
+posArray = malloc((numCars+2)*sizeof(int));
+velArray = malloc((numCars+2)*sizeof(int));
 
 srand (time(NULL));
 
@@ -127,14 +133,21 @@ for (i=0;i<numCars;i++){
   }
 
 // setup stuff
-int counter = 0;
-int *distNextArray,*distAnyArray;
+int fftCounter = 0;
+int numOfPhiHits = 0;
+int *distNextArray,*distAnyArray;//,*phiArray,*phi0Array;
 distNextArray = malloc((trackLength)*sizeof(int));
 distAnyArray = malloc((trackLength)*sizeof(int));
+//phiArray = malloc((trackLength)*sizeof(int));
+//phi0Array = malloc((numSamples)*sizeof(int));
 for(i=0;i<trackLength;i++){
-  distNextArray[i]=0;
-  distAnyArray[i]=0;
+    distNextArray[i]=0;
+    distAnyArray[i]=0;
+//    phiArray[i]=0;
 }
+//for(i=0;i<numSamples;i++){
+//    phi0Array[i]=0;
+//}
 
 //Setup DFT stuff
 double *track2D;
@@ -169,7 +182,9 @@ for (step=0;step<dataStartStep;step+=sampleRate){
 //Data taking runs
 //FFT will happen each time this runs and the results will be averaged
 for (fftRun=0;fftRun<fftRuns;fftRun++){
-  counter=0;
+  fftCounter = 0; //Tracks the number of fftsamples that run
+  numOfPhiHits = 0;
+
 
   //zero out array for holding track history
   for(j=0;j<nx*ny;j++)
@@ -184,13 +199,13 @@ for (fftRun=0;fftRun<fftRuns;fftRun++){
     //asciiDisplay(posArray, velArray);
     //trackDiffusion(posArray, velArray);
     //pairCorrelation(posArray, velArray,distAnyArray);
-    trackHistory(posArray,track2D,counter); //Store output of a given step
+    trackHistory(posArray,track2D,fftCounter); //Store output of a given step
   
-    counter++;
+    fftCounter++;
   }
   //Check that the counter has counted up to fftSamples
-  if(counter != fftSamples){
-    printf("Counter(%d) & fftSamples(%d) mismatch\n",counter,fftSamples);return(-1);
+  if(fftCounter != fftSamples){
+    printf("fftCounter(%d) & fftSamples(%d) mismatch\n",fftCounter,fftSamples);return(-1);
     }
 
   
@@ -203,18 +218,18 @@ int index;
 double avg;
   //Print result of DFT
   fprintf(outputFile,"numCars,%d,maxVel,%d,trackLength,%d,sampleRate,%d,"
-                    "dataStartStep,%d,fftSamples,%d,fftRuns,%d,numDataPoints,%.0f\n",\
+                    "dataStartStep,%d,fftSamples,%d,fftRuns,%d,numDataPoints,%.0f,slowP,%d,%s\n",\
                     numCars,maxVel,trackLength,sampleRate,\
-                    dataStartStep,fftSamples,fftRuns,numDataPoints);
+                    dataStartStep,fftSamples,fftRuns,numDataPoints,p,argv[8]);
   int maxny = ny/2+1; //Only store the nonredundant part of the data
   for (i=0;i<nx;i++){
     for (j=0;j<maxny;j++){
       index = i*ny+j;
       avg = outFull[index]/((double)fftRuns*(double)fftSamples*(double)trackLength);
       if(j<maxny-1)
-        fprintf(outputFile,"%.7f,",avg);
+        fprintf(outputFile,"%.5e,",avg);
       else
-        fprintf(outputFile,"%.7f",avg);
+        fprintf(outputFile,"%.5e",avg);
     }
     fprintf(outputFile,"\n");
   }
@@ -223,8 +238,8 @@ double avg;
 //fprintf(outputFile,"G(r),G_binCount,P(r),P_binCount\n");
 //double pofr,gofr; //P(r), G(r)
 //for(i=0;i<120;i++){
-//  pofr = (float)distNextArray[i]/(counter*numCars);
-//  gofr = (float)distAnyArray[i]/(counter*numCars);
+//  pofr = (float)distNextArray[i]/(fftCounter*numCars);
+//  gofr = (float)distAnyArray[i]/(fftCounter*numCars);
 //  fprintf(outputFile,"%.8f,%d,%.8f,%d\n",\
 //    gofr,distAnyArray[i],pofr,distNextArray[i]);
 //}
@@ -236,6 +251,8 @@ fftw_free(outHalf);
 free(outFull);
 free(distNextArray);
 free(distAnyArray);
+//free(phiArray);
+//free(phi0Array);
 fftw_free(track2D);
 free(posArray);
 free(velArray);
@@ -263,18 +280,18 @@ free(fileName);
 //}
 
 //Fill in array which stores the track state at each sample step
-void trackHistory(int *posArray,double *track2D, int counter)
+void trackHistory(int *posArray,double *track2D, int fftCounter)
 {
   int i,t;
 //  double sVal,wavelength,period;
 //  wavelength = (double)trackLength/1.0;
 //  period = (double)fftSamples/1.0;
   for(i=0;i<numCars;i++){
-    //track2D[posArray[i]+counter*trackLength]=welch(counter);
-    track2D[posArray[i]+counter*trackLength]=Hamm(counter);
-    //printf("%.3f ",welch(counter));
-    //printf("%.3f ",Hamm(counter));
-  //double sVal,wavelength,period;
+    if (phiBool(i,posArray) == 1){
+      //track2D[posArray[i]+fftCounter*trackLength]=welch(fftCounter);
+      track2D[posArray[i]+fftCounter*trackLength]=Hamm(fftCounter);
+    }
+//double sVal,wavelength,period;
   //wavelength = (double)trackLength/1.0;
   //period = (double)fftSamples/1.0;
   }
@@ -482,7 +499,7 @@ void runSimulation(int *posArray, int *velArray)
 ///////////////////////////////////////////////////////////////
 void updateCar(int *pos1, int *vel1, int *pos2){
 
-int dist,newVel,p;
+int dist,newVel;
 
 dist = *pos2 - *pos1 - 1;
 
@@ -503,7 +520,6 @@ else{ //else set new speed to exactly close gap
   *vel1 = dist;
 }
 
-p = 10; //percent chance of slowdown
 if (*vel1 > 0){
   if((rand()%100)+1 <= p)
     *vel1 = *vel1 - 1;
@@ -529,6 +545,53 @@ float Hamm(int timeStep)
 
   return .5*(1-cos(2*PI*n/(N-1)));
 }
+
+int phiBool(int i, int *posArray)
+{
+  int d1, d2;
+
+  posArray[numCars] = posArray[0];
+  posArray[numCars+1] = posArray[1];
+
+  d1 = posArray[i+1] - posArray[i];
+  while(d1<0){d1 = d1 + trackLength;}
+  d2 = posArray[i+2] - posArray[i+1];
+  while(d2<0){d2 = d2 + trackLength;}
+
+  if (d1<=maxVel/2 && d2<=maxVel/2)
+    return 1;
+  else
+    return 0;
+  
+}
+///////////////////////////////////////////////////////////////
+//// phi(r)
+///////////////////////////////////////////////////////////////
+//void phi(int t, int *posArray, int *velArray, int *phiArray, int* phi0Array)
+//{
+//
+//  int i,j,d1,d2;
+//
+//  //Append first two cars to end of array for lookahead purposes
+//  posArray[numCars] = posArray[0];
+//  posArray[numCars+1] = posArray[1];
+//  velArray[numCars] = velArray[0];
+//  velArray[numCars+1] = velArray[1];
+//
+//  for (i=0;i<numCars;i++){
+//    d1 = posArray[i+1] - posArray[i];
+//    while(d1<0){d1 = d1 + trackLength;}
+//    d2 = posArray[i+2] - posArray[i+1];
+//    while(d2<0){d2 = d2 + trackLength;}
+//
+//    if (d1<=maxVel/2){// && d2<=maxVel/2){
+//      //phiArray[posArray[i]]=1;
+//      phi0Array[t] += 1;
+//    }
+//
+//  }
+//}
+
 
 void delay(int milliseconds)
 {
